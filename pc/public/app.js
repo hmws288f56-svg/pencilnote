@@ -19,6 +19,9 @@ const ICONS = {
   expand: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
   shrink: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
   eraser: 'M5 20h14M8 17l-3.6-3.6a2 2 0 0 1 0-2.8l6.2-6.2a2 2 0 0 1 2.8 0l4.2 4.2a2 2 0 0 1 0 2.8L12 17z',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  pages: 'M8 3h11v14H8zM5 7v14h11',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -518,6 +521,7 @@ function renderThumbs() {
 function renderPad() {
   const on = !!state.pad;
   $('#padDot').className = on ? 'dot on' : 'dot';
+  $('#miniDot').className = on ? 'dot on' : 'dot';
   $('#padStatus').textContent = on ? `${state.pad.name} 연결됨` : '아이패드 연결 대기 중';
   const real = state.addrs.filter((a) => !a.virtual);
   const addrs = real.length ? real : state.addrs;
@@ -592,6 +596,23 @@ async function savePdf() {
   }
 }
 
+// 좁은 창에서 목록 여닫기
+function toggleDrawer(name) {
+  const other = name === 'show-side' ? 'show-thumbs' : 'show-side';
+  document.body.classList.remove(other);
+  document.body.classList.toggle(name);
+}
+
+function closeDrawers() {
+  document.body.classList.remove('show-side', 'show-thumbs');
+}
+
+$('#menuBtn').addEventListener('click', () => toggleDrawer('show-side'));
+$('#thumbBtn').addEventListener('click', () => toggleDrawer('show-thumbs'));
+$('#moreBtn').addEventListener('click', () => $('#toolbar').classList.toggle('open'));
+stageEl.addEventListener('click', closeDrawers);
+$('#noteList').addEventListener('click', closeDrawers);
+
 $('#newNote').addEventListener('click', async () => {
   const d = new Date();
   await api('POST', '/api/notes', { title: `${d.getMonth() + 1}월 ${d.getDate()}일 노트` }).catch((e) => console.error(e));
@@ -646,7 +667,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') openIndex(curIndex() - 1);
   else if (e.key === 'ArrowRight' || e.key === 'PageDown') openIndex(curIndex() + 1);
   else if (e.key === 'f' || e.key === 'F') setFocus(!appEl.classList.contains('focus'));
-  else if (e.key === 'Escape') setFocus(false);
+  else if (e.key === 'Escape') {
+    setFocus(false);
+    closeDrawers();
+  }
   else return;
   e.preventDefault();
 });

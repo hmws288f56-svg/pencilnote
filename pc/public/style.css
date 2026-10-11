@@ -273,6 +273,41 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 }
 .thumb:hover .tools, .thumb .tools:focus-within { opacity: 1; }
 
+/* ---------- 좁은 창: 필기 화면만 남기고 목록은 버튼으로 여닫는다 ---------- */
+
+.compact-only { display: none; }
+#menuBtn { position: relative; }
+#menuBtn .dot { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; box-shadow: 0 0 0 2px #fff; }
+
+@media (max-width: 900px) {
+  #app { grid-template-columns: minmax(0, 1fr); }
+  .compact-only { display: inline-flex; }
+
+  #sidebar, #thumbs {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    transition: transform .16s ease-out;
+    box-shadow: 0 0 24px rgba(0, 0, 0, .22);
+  }
+  #sidebar { left: 0; width: min(264px, 86vw); transform: translateX(-105%); }
+  #thumbs { right: 0; width: 148px; transform: translateX(105%); }
+  body.show-side #sidebar, body.show-thumbs #thumbs { transform: none; }
+  body:not(.show-side) #sidebar, body:not(.show-thumbs) #thumbs { box-shadow: none; visibility: hidden; }
+
+  #toolbar { gap: 6px 8px; min-height: 0; padding: 7px 8px; }
+  #toolbar .spacer, #toolbar .secondary { display: none; }
+  #toolbar.open .secondary { display: flex; }
+  #title { flex: 1 1 70px; min-width: 50px; font-size: 15px; padding: 0 4px; }
+  #pageLabel { min-width: 40px; }
+  #addPage .label { display: none; }
+  #addPage { width: 32px; padding: 0; justify-content: center; }
+  .group { gap: 4px; }
+
+  #waitHint, #offline { white-space: normal; text-align: center; border-radius: 14px; width: max-content; }
+}
+
 /* ---------- 필기만 크게 보기 ---------- */
 
 #app.focus { grid-template-columns: 0 minmax(0, 1fr) 0; }
