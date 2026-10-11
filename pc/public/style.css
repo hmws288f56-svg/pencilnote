@@ -1,0 +1,292 @@
+:root {
+  --bg: #f4f3ef;
+  --panel: #fbfaf7;
+  --stage: #d9d6ce;
+  --line: #e1ded6;
+  --text: #24231f;
+  --muted: #7a766d;
+  --accent: #2b5fd9;
+  --accent-soft: #e4ecfd;
+  --ok: #1e9a52;
+  --wait: #c88a10;
+  --danger: #c43c3c;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font: 14px/1.45 "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+
+#app {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr) 148px;
+  height: 100vh;
+}
+
+/* ---------- 버튼 ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: #f3f1ec; border-color: #d3cfc5; }
+.btn:active { background: #eae7e0; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.icon { width: 32px; padding: 0; justify-content: center; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: #2453c4; border-color: #2453c4; }
+.btn.wide { width: 100%; justify-content: center; height: 36px; }
+.btn svg, .mini svg { width: 16px; height: 16px; flex: none; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---------- 왼쪽: 노트 목록 ---------- */
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px 12px 12px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.brand img { border-radius: 6px; }
+
+#noteList {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 0 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.note {
+  position: relative;
+  padding: 9px 34px 9px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.note + .note { margin-top: 2px; }
+.note:hover { background: #f0eee8; }
+.note.active { background: var(--accent-soft); }
+.note-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note.active .note-title { color: #1c46ab; }
+.note-meta { margin-top: 1px; font-size: 12px; color: var(--muted); }
+
+.mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.mini:hover { background: rgba(0, 0, 0, .08); color: var(--text); }
+.mini.danger:hover { background: #fbe6e6; color: var(--danger); }
+.mini:disabled { opacity: .3; cursor: default; }
+
+.note .mini { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); opacity: 0; }
+.note:hover .mini, .note .mini:focus-visible { opacity: 1; }
+
+#padCard {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.pad-status { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--wait); box-shadow: 0 0 0 3px rgba(200, 138, 16, .18); }
+.dot.on { background: var(--ok); box-shadow: 0 0 0 3px rgba(30, 154, 82, .18); }
+
+#padCard dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; margin: 10px 0 0; }
+#padCard dt { font-size: 12px; color: var(--muted); }
+#padCard dd { margin: 0; font: 600 16px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .02em; user-select: all; }
+
+.fine { font-size: 12px; color: var(--muted); }
+#padOther { margin: 6px 0 0; }
+
+#padCard details { margin-top: 10px; font-size: 12.5px; }
+#padCard summary { color: var(--muted); cursor: pointer; }
+#padCard ol { margin: 8px 0 0; padding-left: 18px; }
+#padCard li + li { margin-top: 5px; }
+
+/* ---------- 가운데 ---------- */
+
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+#toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  min-height: 52px;
+  padding: 9px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+#title {
+  flex: 1 1 160px;
+  min-width: 120px;
+  max-width: 340px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+#title:hover { border-color: var(--line); }
+#title:focus { border-color: var(--accent); background: #fff; outline: none; }
+
+.group { display: flex; align-items: center; gap: 6px; }
+.spacer { flex: 1 1 0; }
+#pageLabel { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+.seg { gap: 0; padding: 2px; border-radius: var(--radius); background: #ebe8e1; }
+.seg button {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.seg button:hover { color: var(--text); }
+.seg button.on { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+
+#stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--stage); }
+
+#page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1024px;
+  height: 1448px;
+  background: #fff;
+  transform-origin: 0 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .16), 0 10px 30px rgba(0, 0, 0, .12);
+}
+#page.smooth { transition: transform .14s ease-out; }
+#page canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+#waitHint, #offline {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  max-width: calc(100% - 32px);
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(36, 35, 31, .88);
+  color: #fff;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#offline { top: 22px; bottom: auto; background: var(--danger); }
+
+#exitFocus { position: absolute; top: 12px; right: 12px; opacity: .35; }
+#exitFocus:hover { opacity: 1; }
+
+/* ---------- 오른쪽: 페이지 목록 ---------- */
+
+#thumbs { min-height: 0; padding: 12px; background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; }
+#thumbList { display: flex; flex-direction: column; gap: 10px; }
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1024 / 1448;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+.thumb:hover { border-color: #c9c5ba; }
+.thumb.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.thumb .num {
+  position: absolute;
+  left: 5px;
+  bottom: 4px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .85);
+  font-size: 11px;
+  color: var(--muted);
+}
+.thumb.active .num { background: var(--accent); color: #fff; }
+.thumb .tools {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .92);
+  opacity: 0;
+}
+.thumb:hover .tools, .thumb .tools:focus-within { opacity: 1; }
+
+/* ---------- 필기만 크게 보기 ---------- */
+
+#app.focus { grid-template-columns: 0 minmax(0, 1fr) 0; }
+#app.focus #sidebar, #app.focus #thumbs, #app.focus #toolbar { display: none; }
+
+/* ---------- PDF로 내보내기(인쇄) ---------- */
+
+#printArea { display: none; }
+
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  body { overflow: visible; background: #fff; }
+  #app { display: none; }
+  #printArea { display: block; }
+  .sheet { position: relative; width: 210mm; height: 296.8mm; overflow: hidden; break-after: page; }
+  .sheet:last-child { break-after: auto; }
+  .sheet img { position: absolute; inset: 0; width: 100%; height: 100%; }
+}

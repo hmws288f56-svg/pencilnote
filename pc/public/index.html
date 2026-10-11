@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>펜슬노트</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="app">
+
+  <aside id="sidebar">
+    <div class="brand">
+      <img src="/favicon.svg" alt="" width="26" height="26">
+      <span>펜슬노트</span>
+    </div>
+
+    <button id="newNote" class="btn primary wide" type="button"><span data-icon="plus"></span>새 노트</button>
+
+    <ul id="noteList"></ul>
+
+    <section id="padCard">
+      <div class="pad-status"><span id="padDot" class="dot"></span><span id="padStatus">아이패드 연결 대기 중</span></div>
+      <dl>
+        <dt>주소</dt><dd id="padAddr">-</dd>
+        <dt>연결 코드</dt><dd id="padCode">-</dd>
+      </dl>
+      <p id="padOther" class="fine" hidden></p>
+      <details>
+        <summary>연결이 안 될 때</summary>
+        <ol>
+          <li>아이패드와 노트북이 <b>같은 Wi-Fi</b>인지 확인</li>
+          <li>Windows 방화벽 창이 뜨면 <b>액세스 허용</b></li>
+          <li>아이패드에서 <b>로컬 네트워크</b> 권한 허용<br><span class="fine">설정 → 개인정보 보호 및 보안 → 로컬 네트워크</span></li>
+          <li>아이패드의 VPN(LocalDevVPN 등)은 끄기</li>
+        </ol>
+      </details>
+    </section>
+  </aside>
+
+  <main>
+    <header id="toolbar">
+      <input id="title" type="text" maxlength="80" spellcheck="false" aria-label="노트 제목">
+
+      <div class="group">
+        <button id="prevPage" class="btn icon" type="button" title="이전 페이지 (←)"><span data-icon="left"></span></button>
+        <span id="pageLabel">1 / 1</span>
+        <button id="nextPage" class="btn icon" type="button" title="다음 페이지 (→)"><span data-icon="right"></span></button>
+        <button id="addPage" class="btn" type="button" title="현재 페이지 뒤에 새 페이지 추가"><span data-icon="plus"></span>페이지</button>
+      </div>
+
+      <div class="group seg" id="paperSeg" role="group" aria-label="종이 종류">
+        <button type="button" data-paper="plain">무지</button>
+        <button type="button" data-paper="ruled">줄</button>
+        <button type="button" data-paper="grid">모눈</button>
+        <button type="button" data-paper="dot">점</button>
+      </div>
+
+      <div class="group seg" id="viewSeg" role="group" aria-label="보기 방식">
+        <button type="button" data-view="follow" title="아이패드에서 보고 있는 부분을 크게 보여 줍니다">아이패드 화면</button>
+        <button type="button" data-view="page" title="페이지 전체를 보여 줍니다">페이지 전체</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="group">
+        <button id="clearPage" class="btn" type="button" title="이 페이지의 필기를 모두 지웁니다"><span data-icon="eraser"></span>비우기</button>
+        <button id="savePng" class="btn" type="button" title="이 페이지를 그림 파일로 저장"><span data-icon="download"></span>PNG</button>
+        <button id="savePdf" class="btn" type="button" title="노트 전체를 PDF로 저장 (인쇄 창에서 'PDF로 저장' 선택)"><span data-icon="print"></span>PDF</button>
+        <button id="focusBtn" class="btn icon" type="button" title="필기만 크게 보기 (F)"><span data-icon="expand"></span></button>
+      </div>
+    </header>
+
+    <section id="stage">
+      <div id="page">
+        <canvas id="paper"></canvas>
+        <canvas id="ink"></canvas>
+        <canvas id="live"></canvas>
+      </div>
+      <div id="waitHint" hidden>아이패드 앱을 열고 왼쪽 아래의 <b>주소</b>와 <b>연결 코드</b>를 입력하세요</div>
+      <div id="offline" hidden>노트북 프로그램이 꺼져 있어요. <b>펜슬노트 시작</b>을 다시 실행하세요.</div>
+      <button id="exitFocus" class="btn icon" type="button" title="원래 화면으로 (Esc)" hidden><span data-icon="shrink"></span></button>
+    </section>
+  </main>
+
+  <aside id="thumbs">
+    <div id="thumbList"></div>
+  </aside>
+
+</div>
+
+<div id="printArea"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

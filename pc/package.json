@@ -1,0 +1,13 @@
+{
+  "name": "pencilnote-pc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "펜슬노트 노트북 프로그램: 아이패드 필기를 받아 화면에 표시하고 저장",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

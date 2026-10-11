@@ -1,0 +1,88 @@
+name: Build IPA
+
+# 아이패드 앱 코드(ios/)가 바뀌면 서명 안 된 IPA를 만들어 릴리스에 올린다.
+# 서명과 설치는 아이패드의 SideStore가 한다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ipa
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build
+        working-directory: ios
+        run: |
+          xcodebuild -version
+          if ! xcodebuild \
+              -project PencilNote.xcodeproj \
+              -scheme PencilNote \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath build \
+              CURRENT_PROJECT_VERSION="$BUILD" \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+              build > build.log 2>&1; then
+            echo "::group::오류"
+            grep -E "error:|error :" build.log | sort -u | head -80 || true
+            echo "::endgroup::"
+            tail -60 build.log
+            exit 1
+          fi
+          grep -E "warning:" build.log | sort -u | head -40 || true
+          tail -3 build.log
+
+      - name: Package IPA
+        working-directory: ios
+        run: |
+          APP=build/Build/Products/Release-iphoneos/PencilNote.app
+          test -d "$APP"
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry PencilNote.ipa Payload
+          ls -lh PencilNote.ipa
+
+      - name: Publish release
+        run: |
+          gh release create "build-$BUILD" ios/PencilNote.ipa \
+            --title "Build $BUILD" \
+            --notes "아이패드에서 PencilNote.ipa를 받아 SideStore → My Apps → + 로 설치하세요. (커밋 ${GITHUB_SHA::7})"
+
+      # 빌드가 깨졌을 때 로그인을 하지 않고도 원인을 볼 수 있게 로그를 릴리스에 붙여 둔다.
+      - name: Publish failure log
+        if: failure()
+        run: |
+          {
+            echo "빌드 실패 (커밋 ${GITHUB_SHA::7})"
+            echo
+            echo '```'
+            grep -E "error:|error :" ios/build.log 2>/dev/null | sort -u | head -60 || true
+            echo '```'
+          } > notes.md
+          touch ios/build.log
+          gh release create "fail-$BUILD" ios/build.log --prerelease --title "Build $BUILD 실패" --notes-file notes.md || true

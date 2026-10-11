@@ -1,0 +1,10 @@
+node_modules/
+*.log
+.DS_Store
+
+# XcodeGen이 빌드 때 만드는 것
+ios/*.xcodeproj/
+ios/build/
+
+# 테스트용 데이터
+.testdata/

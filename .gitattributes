@@ -1,0 +1,6 @@
+* text=auto
+*.bat text eol=crlf
+*.swift text eol=lf
+*.yml text eol=lf
+*.plist text eol=lf
+*.png binary
