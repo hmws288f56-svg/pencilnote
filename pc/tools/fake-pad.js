@@ -176,6 +176,7 @@ let loaded = null; // { note, page, gen }
 let rev = 0;
 let patchBase = 0;
 let strokes = [];
+let dirty = false; // 아직 올리지 않은 획이 있는지
 let session = 0;
 let sid = 0;
 
@@ -185,6 +186,8 @@ function send(obj) {
 
 async function loadPage(st) {
   const my = ++session;
+  // 실제 앱처럼, 다른 페이지로 넘어가기 전에 쓰던 페이지를 먼저 올린다.
+  if (loaded && dirty) save().catch((e) => console.error(e));
   const target = { note: st.note.id, page: st.page.id, gen: st.page.gen };
   const res = await fetch(`${BASE}/api/notes/${target.note}/pages/${target.page}/drawing`, { headers });
   if (my !== session) return;
@@ -200,6 +203,7 @@ async function loadPage(st) {
   pixels = Buffer.alloc(W * H * 4);
   for (const s of strokes) rasterize(s);
   loaded = target;
+  dirty = false;
   rev = Number(res.headers.get('X-Rev')) || st.page.rev || 0;
   patchBase = rev;
   console.log(`페이지 열림 ${st.index + 1}/${st.count} · 획 ${strokes.length}개 · rev ${rev}`);
@@ -224,6 +228,7 @@ async function write(my) {
     strokes.push(stroke);
     rasterize(stroke);
     rev += 1;
+    dirty = true;
     const b = bounds(stroke);
     send({ t: 'patch', note: loaded.note, page: loaded.page, rev, base: patchBase, ...b, png: crop(b).toString('base64') });
     patchBase = rev;
@@ -239,6 +244,7 @@ async function write(my) {
 
 async function save() {
   const target = loaded;
+  dirty = false;
   const drawing = Buffer.from(JSON.stringify(strokes));
   const image = encodePng(pixels, W, H);
   const thumb = thumbnail();
@@ -259,7 +265,7 @@ function connect() {
       const same = loaded && loaded.note === m.note.id && loaded.page === m.page.id && loaded.gen === m.page.gen;
       if (!same) loadPage(m).catch((e) => console.error(e));
     } else if (m.t === 'flush') {
-      if (loaded) save().catch((e) => console.error(e));
+      if (loaded && dirty) save().catch((e) => console.error(e));
     }
   });
   ws.on('close', () => {
