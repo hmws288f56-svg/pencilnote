@@ -129,3 +129,11 @@ node pc/tools/fake-pad.js --port 8799
 - **처음 등록(연결 코드 입력)은 집 Wi-Fi나 내 핫스팟에서.** 이때 한 번은 인증서를 처음 보는 것이라 진짜인지 가려낼 수 없음. 등록한 뒤로는 공용 Wi-Fi에서도 안전함
 - 암호화와 별개로, 카페·학교 Wi-Fi가 기기끼리의 통신 자체를 막아 두면 연결이 안 됨. 그럴 때는 휴대폰 핫스팟을 쓸 것
 - 아이패드용 포트는 8788(암호화), 노트북 화면용은 8787(이 PC 전용)
+
+## Lecture Studio의 필기 탭
+
+`문서\LectureStudio`의 강의노트 화면 오른쪽 패널에 **질문 | 필기** 탭이 있고, 필기 탭은 펜슬노트 화면(`http://localhost:8787`)을 그대로 보여 줌.
+
+- 펜슬노트 프로그램(`펜슬노트 시작.bat`)은 따로 켜 두어야 함. 꺼져 있으면 안내가 뜨고, 켜면 자동으로 나타남
+- 추가한 곳: `LectureStudio\engine\templates\qa.js`와 `qa.css`의 맨 끝 `PENCILNOTE TAB` 블록
+- 되돌리려면 같은 폴더의 `qa.js.before-pencilnote`, `qa.css.before-pencilnote`를 원래 이름으로 덮어쓰면 됨
