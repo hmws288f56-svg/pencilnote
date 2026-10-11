@@ -10,7 +10,10 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist node_modules\ws (
+set NEED=
+if not exist node_modules\ws set NEED=1
+if not exist node_modules\selfsigned set NEED=1
+if defined NEED (
   echo 처음 실행이라 필요한 파일을 받는 중입니다...
   call npm install --no-fund --no-audit
   if errorlevel 1 (

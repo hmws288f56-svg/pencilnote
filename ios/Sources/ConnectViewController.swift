@@ -44,7 +44,7 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
         header.alignment = .firstBaseline
 
         let help = UILabel()
-        help.text = "노트북에서 ‘펜슬노트 시작’을 실행하면 화면 왼쪽 아래에 주소와 연결 코드가 나옵니다. 아이패드와 노트북은 같은 Wi-Fi에 연결되어 있어야 해요."
+        help.text = "노트북에서 ‘펜슬노트 시작’을 실행하면 화면 왼쪽 아래에 주소와 연결 코드가 나옵니다. 연결 코드는 처음 한 번만 필요하고, 그 뒤로는 암호화된 연결로 자동으로 붙어요. 처음 등록은 집 Wi-Fi나 내 핫스팟에서 하세요."
         help.font = .systemFont(ofSize: 15)
         help.textColor = .secondaryLabel
         help.numberOfLines = 0
@@ -53,8 +53,7 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
         hostField.text = link.host
         hostField.returnKeyType = .next
 
-        style(codeField, placeholder: "연결 코드 6자리", keyboard: .numberPad)
-        codeField.text = link.code
+        style(codeField, placeholder: link.isPaired ? "연결 코드 (다시 등록할 때만)" : "연결 코드 6자리", keyboard: .numberPad)
 
         scanButton.setTitle("자동으로 찾기", for: .normal)
         scanButton.titleLabel?.font = .systemFont(ofSize: 17)
@@ -139,6 +138,10 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
         switch reason {
         case "locked":
             return "코드를 여러 번 틀려서 잠시 막혔어요. 5분 뒤에 다시 시도하세요."
+        case "token":
+            return "노트북에서 등록이 해제됐어요. 노트북 화면의 연결 코드를 입력해 다시 연결하세요."
+        case "unreachable":
+            return "노트북에 닿지 않아요. 노트북에서 펜슬노트가 켜져 있는지, 같은 Wi-Fi인지, 이 앱에 ‘로컬 네트워크’ 권한을 허용했는지 확인하세요. 카페·학교 Wi-Fi가 기기끼리의 통신을 막는 경우에는 휴대폰 핫스팟을 쓰세요."
         case "replaced":
             return "다른 기기가 이 노트북에 연결했어요. 이 아이패드로 쓰려면 ‘연결’을 누르세요."
         case "none":
@@ -162,26 +165,45 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func connect() {
-        let host = (hostField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let host = PadLink.cleanHost(hostField.text ?? "")
         let code = (codeField.text ?? "").filter { "0123456789".contains($0) }
         guard !host.isEmpty else {
             show("노트북 주소를 입력하세요. ‘자동으로 찾기’를 눌러도 돼요.", isError: true)
+            return
+        }
+        view.endEditing(true)
+
+        // 이미 등록된 노트북이고 코드를 비워 뒀으면 다시 붙기만 한다.
+        if code.isEmpty && link.isPaired && host == link.host {
+            waitForConnection()
             return
         }
         guard code.count == 6 else {
             show("연결 코드 6자리를 입력하세요.", isError: true)
             return
         }
-        view.endEditing(true)
+        connectButton.isEnabled = false
+        show("등록하는 중…", isError: false)
+        link.pair(host: host, code: code) { [weak self] problem in
+            guard let self = self else { return }
+            self.connectButton.isEnabled = true
+            if let problem = problem {
+                self.show(Self.message(for: problem), isError: true)
+            } else {
+                self.codeField.text = ""
+                self.waitForConnection()
+            }
+        }
+    }
+
+    private func waitForConnection() {
         waiting = true
         show("연결하는 중…", isError: false)
-        link.configure(host: host, code: code)
         link.start()
-
         hintTimer?.invalidate()
         hintTimer = after(6) { [weak self] in
             guard let self = self, self.waiting else { return }
-            self.show("아직 연결되지 않았어요. 노트북에서 펜슬노트가 켜져 있는지, 같은 Wi-Fi인지, 이 앱에 ‘로컬 네트워크’ 권한을 허용했는지 확인하세요.", isError: true)
+            self.show(Self.message(for: "unreachable"), isError: true)
         }
     }
 

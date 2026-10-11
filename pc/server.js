@@ -1,22 +1,29 @@
 'use strict';
 // 펜슬노트 노트북 프로그램
 // - 아이패드 앱이 Wi-Fi로 보내는 필기를 받아 저장하고, 이 노트북의 브라우저 화면에 실시간으로 전달한다.
-// - 화면(뷰어)은 이 노트북에서만 열 수 있고, 아이패드는 연결 코드가 맞아야 접속된다.
+// - 화면(뷰어)은 이 노트북에서만 열 수 있다. (http, 이 PC 안에서만 접속 가능)
+// - 아이패드는 암호화된 연결(TLS)로만 접속한다. 처음 한 번 연결 코드로 등록하면 기기 전용 비밀키를 받고,
+//   그 뒤로는 비밀키로 인증한다. 아이패드는 이 노트북의 인증서를 기억해 두고 다른 인증서는 거부한다.
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
-const PORT = Number(process.env.PENCILNOTE_PORT) || 8787;
+const PORT = Number(process.env.PENCILNOTE_PORT) || 8787; // 노트북 화면용 (이 PC 전용)
+const TLS_PORT = Number(process.env.PENCILNOTE_TLS_PORT) || PORT + 1; // 아이패드용 (암호화)
 const DATA = path.resolve(process.env.PENCILNOTE_DATA || path.join(os.homedir(), 'Documents', 'PencilNote'));
 const PUBLIC = path.join(__dirname, 'public');
 const PAGES = path.join(DATA, 'pages');
 const TRASH = path.join(DATA, 'trash');
 const LIB_FILE = path.join(DATA, 'library.json');
 const CONFIG_FILE = path.join(DATA, 'config.json');
+const KEY_FILE = path.join(DATA, 'tls-key.pem');
+const CERT_FILE = path.join(DATA, 'tls-cert.pem');
+const MAX_DEVICES = 8;
 
 const PAPERS = ['plain', 'ruled', 'grid', 'dot'];
 const STATIC = new Set(['index.html', 'app.js', 'style.css', 'favicon.svg']);
@@ -90,6 +97,31 @@ if (!config || !config.code || !config.id) {
     code: String(crypto.randomInt(0, 1000000)).padStart(6, '0'),
   };
   writeAtomic(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+if (!Array.isArray(config.devices)) config.devices = []; // 등록된 아이패드: { hash, name, added }
+
+function saveConfig() {
+  writeAtomic(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+function sha256(text) {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+// 이 노트북만의 인증서. 한 번 만들어 계속 쓴다. (바뀌면 아이패드가 다시 등록해야 한다)
+async function loadCertificate() {
+  if (fs.existsSync(KEY_FILE) && fs.existsSync(CERT_FILE)) {
+    return { key: fs.readFileSync(KEY_FILE), cert: fs.readFileSync(CERT_FILE) };
+  }
+  const selfsigned = require('selfsigned');
+  const made = await selfsigned.generate([{ name: 'commonName', value: 'PencilNote' }], {
+    keySize: 2048,
+    algorithm: 'sha256',
+    notAfterDate: new Date(Date.now() + 20 * 365 * 24 * 3600 * 1000),
+  });
+  writeAtomic(KEY_FILE, made.private);
+  writeAtomic(CERT_FILE, made.cert);
+  return { key: made.private, cert: made.cert };
 }
 
 function loadLibrary() {
@@ -220,6 +252,14 @@ function checkCode(req, url) {
   return 'bad';
 }
 
+// 등록된 아이패드가 보내는 비밀키 확인
+function tokenOk(req, url) {
+  const token = String(req.headers['x-token'] || url.searchParams.get('token') || '');
+  if (token.length < 32) return false;
+  const hash = sha256(token);
+  return config.devices.some((d) => d.hash === hash);
+}
+
 // ---------- 실시간 연결 ----------
 
 const wss = new WebSocketServer({ noServer: true, maxPayload: 32 * 1024 * 1024 });
@@ -239,8 +279,9 @@ function viewState() {
     current: lib.current,
     pad: pad ? { name: pad.name } : null,
     addrs: lanAddresses(),
-    port: PORT,
+    port: TLS_PORT,
     code: config.code,
+    devices: config.devices.length,
     host: os.hostname(),
     dataDir: DATA,
   };
@@ -437,10 +478,20 @@ async function handle(req, res) {
     return res.end(data);
   }
 
-  if (!local) {
+  // 처음 등록: 연결 코드가 맞으면 이 아이패드 전용 비밀키를 만들어 준다.
+  if (seg[1] === 'pair' && method === 'POST') {
     const verdict = checkCode(req, url);
     if (verdict !== 'ok') return json(res, { error: verdict }, verdict === 'locked' ? 429 : 401);
+    const body = await readJsonBody(req);
+    const token = crypto.randomBytes(32).toString('hex');
+    config.devices.push({ hash: sha256(token), name: String(body.name || 'iPad').slice(0, 40), added: Date.now() });
+    while (config.devices.length > MAX_DEVICES) config.devices.shift();
+    saveConfig();
+    pushState();
+    return json(res, { token, id: config.id, name: os.hostname() });
   }
+
+  if (!local && !tokenOk(req, url)) return json(res, { error: 'token' }, 401);
 
   // --- 페이지 파일: 아이패드와 노트북 화면 둘 다 사용 ---
   if (seg[1] === 'notes' && seg[3] === 'pages' && seg.length === 6 && ID_RE.test(seg[2]) && ID_RE.test(seg[4])) {
@@ -523,6 +574,16 @@ async function handle(req, res) {
   if (!local) return json(res, { error: 'forbidden' }, 403);
 
   if (seg[1] === 'state' && method === 'GET') return json(res, viewState());
+
+  // 등록된 아이패드를 모두 해제하고 연결 코드도 새로 만든다.
+  if (seg[1] === 'unpair' && method === 'POST') {
+    config.devices = [];
+    config.code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    saveConfig();
+    if (pad) pad.ws.close(4003, 'unpaired');
+    pushState();
+    return json(res, { ok: true });
+  }
 
   if (seg[1] === 'flush' && method === 'POST') {
     toPad({ t: 'flush' });
@@ -608,15 +669,15 @@ async function handle(req, res) {
   return json(res, { error: 'not found' }, 404);
 }
 
-const server = http.createServer((req, res) => {
+function onRequest(req, res) {
   handle(req, res).catch((e) => {
     if (!e.status) console.error(e);
     if (!res.headersSent) json(res, { error: e.status ? e.message : 'server error' }, e.status || 500);
     else res.end();
   });
-});
+}
 
-server.on('upgrade', (req, socket, head) => {
+function onUpgrade(req, socket, head) {
   const url = new URL(req.url, 'http://local');
   const role = url.searchParams.get('role');
   if (url.pathname !== '/ws' || (role !== 'view' && role !== 'pad')) return socket.destroy();
@@ -626,8 +687,8 @@ server.on('upgrade', (req, socket, head) => {
     return wss.handleUpgrade(req, socket, head, addViewer);
   }
 
-  // 아이패드: 코드가 틀려도 일단 연결을 받은 뒤 이유를 알려 주고 끊는다. (앱이 안내 문구를 띄울 수 있게)
-  const verdict = localOk(req) ? 'ok' : checkCode(req, url);
+  // 아이패드: 비밀키가 틀려도 일단 연결을 받은 뒤 이유를 알려 주고 끊는다. (앱이 안내 문구를 띄울 수 있게)
+  const verdict = localOk(req) || tokenOk(req, url) ? 'ok' : 'token';
   wss.handleUpgrade(req, socket, head, (ws) => {
     if (verdict !== 'ok') {
       ws.on('error', () => {});
@@ -636,26 +697,56 @@ server.on('upgrade', (req, socket, head) => {
     }
     addPad(ws, url.searchParams.get('name'));
   });
-});
+}
 
-server.on('error', (e) => {
+function onListenError(e) {
   if (e.code === 'EADDRINUSE') {
     console.log(`펜슬노트가 이미 실행 중입니다. 브라우저에서 http://localhost:${PORT} 를 여세요.`);
     process.exit(0);
   }
   throw e;
-});
+}
 
-server.listen(PORT, () => {
+function listen(server, port, host) {
+  return new Promise((resolve) => {
+    server.on('request', onRequest);
+    server.on('upgrade', onUpgrade);
+    server.on('error', onListenError);
+    server.listen(port, host, resolve);
+  });
+}
+
+async function main() {
+  const tls = await loadCertificate();
+  const fingerprint = new crypto.X509Certificate(tls.cert).fingerprint256;
+
+  // 노트북 화면: 이 PC 안에서만 열리는 주소에만 연다.
+  await listen(http.createServer(), PORT, '127.0.0.1');
+  const v6 = http.createServer();
+  v6.on('request', onRequest);
+  v6.on('upgrade', onUpgrade);
+  v6.on('error', () => {}); // IPv6가 꺼진 PC에서는 그냥 넘어간다
+  v6.listen(PORT, '::1');
+
+  // 아이패드: 암호화된 연결만 받는다.
+  await listen(https.createServer({ key: tls.key, cert: tls.cert, minVersion: 'TLSv1.2' }), TLS_PORT);
+
   const addrs = lanAddresses().filter((a) => !a.virtual);
   console.log('');
   console.log('  펜슬노트 실행 중  (이 창을 닫으면 종료됩니다)');
   console.log('');
   console.log(`  노트북 화면   http://localhost:${PORT}`);
   console.log(`  아이패드 주소 ${addrs.length ? addrs.map((a) => a.address).join('  또는  ') : '(Wi-Fi에 연결되어 있지 않음)'}`);
-  console.log(`  연결 코드     ${config.code.slice(0, 3)} ${config.code.slice(3)}`);
+  console.log(`  연결 코드     ${config.code.slice(0, 3)} ${config.code.slice(3)}  (처음 한 번만 필요)`);
+  console.log(`  등록된 기기   ${config.devices.length}대`);
   console.log(`  저장 위치     ${DATA}`);
+  console.log(`  인증서 지문   ${fingerprint.split(':').slice(0, 8).join(':')}...`);
   console.log('');
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });
 
 function shutdown() {

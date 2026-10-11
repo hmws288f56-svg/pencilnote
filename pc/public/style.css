@@ -140,6 +140,8 @@ button { cursor: pointer; }
 
 .fine { font-size: 12px; color: var(--muted); }
 #padOther { margin: 6px 0 0; }
+#padSecure { margin: 8px 0 0; }
+.linkish { padding: 0; border: 0; background: none; color: var(--accent); font-size: 12px; text-decoration: underline; }
 
 #padCard details { margin-top: 10px; font-size: 12.5px; }
 #padCard summary { color: var(--muted); cursor: pointer; }

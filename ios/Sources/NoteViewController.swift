@@ -88,7 +88,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
         toolPicker.setVisible(true, forFirstResponder: canvas)
         toolPicker.addObserver(canvas)
         canvas.becomeFirstResponder()
-        if link.host.isEmpty { showConnect() }
+        if !link.isPaired { showConnect() }
     }
 
     override func viewDidLayoutSubviews() {
@@ -246,16 +246,18 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
         case .connecting:
             statusText = "연결 중…"
             statusColor = .systemOrange
-            hint = "노트북을 찾는 중…\n노트북에서 ‘펜슬노트 시작’을 실행했는지 확인하세요."
+            hint = link.certProblem
+                ? "이 주소의 기기는 등록한 노트북이 아니에요.\n노트북을 다시 찾는 중… 계속 안 되면 믿을 수 있는 Wi-Fi에서 다시 등록하세요."
+                : "노트북을 찾는 중…\n노트북에서 ‘펜슬노트 시작’을 실행했는지 확인하세요."
         case .off:
             statusText = "노트북 연결"
             hint = "노트북에 연결하면 필기를 시작할 수 있어요.\n왼쪽 위의 ‘노트북 연결’을 누르세요."
         case .denied(let reason):
-            statusText = reason == "replaced" ? "다른 기기가 연결됨" : "연결 코드 확인"
+            statusText = reason == "replaced" ? "다른 기기가 연결됨" : "다시 등록 필요"
             statusColor = .systemRed
             hint = reason == "replaced"
                 ? "다른 기기가 이 노트북에 연결했어요.\n왼쪽 위를 눌러 다시 연결할 수 있어요."
-                : "연결 코드를 확인하세요.\n왼쪽 위를 눌러 다시 입력할 수 있어요."
+                : "노트북에서 등록이 해제됐어요.\n왼쪽 위를 눌러 연결 코드를 다시 입력하세요."
         }
         statusButton.setTitle(" " + statusText, for: .normal)
         statusButton.tintColor = statusColor

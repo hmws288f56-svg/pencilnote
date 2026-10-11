@@ -527,6 +527,8 @@ function renderPad() {
   other.textContent = addrs.length < 2 ? '' : `안 되면: ${addrs.slice(1).map((a) => a.address).join(', ')}`;
   $('#padCode').textContent = `${state.code.slice(0, 3)} ${state.code.slice(3)}`;
   $('#waitHint').hidden = on;
+  $('#padDevices').textContent = `등록된 기기 ${state.devices}대`;
+  $('#unpair').hidden = !state.devices;
 }
 
 // ---------- 동작 ----------
@@ -628,6 +630,10 @@ $('#clearPage').addEventListener('click', () => {
   if (confirm('이 페이지의 필기를 모두 지울까요?\n(지운 필기는 저장 폴더의 trash 폴더에 남습니다)')) {
     run(api('POST', `/api/notes/${state.current.note}/pages/${state.current.page}/clear`));
   }
+});
+
+$('#unpair').addEventListener('click', () => {
+  if (confirm('등록된 아이패드를 모두 해제하고 연결 코드를 새로 만들까요?\n(아이패드에서 새 코드로 다시 연결해야 합니다)')) run(api('POST', '/api/unpair'));
 });
 
 $('#savePng').addEventListener('click', savePng);
