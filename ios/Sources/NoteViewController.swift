@@ -22,6 +22,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
     private let statusButton = UIButton(type: .system)
     private let titleLabel = UILabel()
     private let pageLabel = UILabel()
+    private lazy var themeButton = barButton("moon", "어두운 화면", #selector(themeTapped))
     private lazy var undoButton = barButton("arrow.uturn.backward", "실행 취소", #selector(undoTapped))
     private lazy var redoButton = barButton("arrow.uturn.forward", "다시 실행", #selector(redoTapped))
     private lazy var prevButton = barButton("chevron.left", "이전 페이지", #selector(prevTapped))
@@ -67,7 +68,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(white: 0.985, alpha: 1)
+        view.backgroundColor = Theme.bar
         setupBar()
         setupStage()
 
@@ -84,7 +85,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
         super.viewDidAppear(animated)
         guard !pickerReady else { return }
         pickerReady = true
-        toolPicker.colorUserInterfaceStyle = .light
+        applyTheme()
         toolPicker.setVisible(true, forFirstResponder: canvas)
         toolPicker.addObserver(canvas)
         canvas.becomeFirstResponder()
@@ -124,12 +125,12 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
     }
 
     private func setupBar() {
-        bar.backgroundColor = UIColor(white: 0.985, alpha: 1)
+        bar.backgroundColor = Theme.bar
         bar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)
 
         let line = UIView()
-        line.backgroundColor = UIColor(white: 0, alpha: 0.12)
+        line.backgroundColor = Theme.line
         line.translatesAutoresizingMaskIntoConstraints = false
         bar.addSubview(line)
 
@@ -140,23 +141,24 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
         statusButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.textColor = UIColor(white: 0.15, alpha: 1)
+        titleLabel.textColor = Theme.title
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         pageLabel.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
-        pageLabel.textColor = UIColor(white: 0.35, alpha: 1)
+        pageLabel.textColor = Theme.dim
         pageLabel.textAlignment = .center
         pageLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 58).isActive = true
         pageLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        let row = UIStackView(arrangedSubviews: [statusButton, titleLabel, undoButton, redoButton, prevButton, pageLabel, nextButton, addButton])
+        let row = UIStackView(arrangedSubviews: [statusButton, titleLabel, themeButton, undoButton, redoButton, prevButton, pageLabel, nextButton, addButton])
         row.axis = .horizontal
         row.alignment = .center
         row.spacing = 4
         row.setCustomSpacing(16, after: statusButton)
         row.setCustomSpacing(18, after: redoButton)
+        row.setCustomSpacing(14, after: themeButton)
         row.translatesAutoresizingMaskIntoConstraints = false
         bar.addSubview(row)
 
@@ -179,7 +181,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
     }
 
     private func setupStage() {
-        stage.backgroundColor = UIColor(red: 0.85, green: 0.84, blue: 0.81, alpha: 1)
+        stage.backgroundColor = Theme.stage
         stage.clipsToBounds = true
         stage.translatesAutoresizingMaskIntoConstraints = false
         view.insertSubview(stage, belowSubview: bar)
@@ -200,7 +202,7 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
         stage.addSubview(canvas)
 
         messageLabel.font = .systemFont(ofSize: 18, weight: .medium)
-        messageLabel.textColor = UIColor(white: 0.3, alpha: 1)
+        messageLabel.textColor = Theme.dim
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -653,6 +655,25 @@ final class NoteViewController: UIViewController, PKCanvasViewDelegate, PadLinkD
             "w": num(size.width / zoom),
             "h": num(size.height / zoom),
         ])
+    }
+
+    // MARK: 밝은 화면 / 어두운 화면
+
+    /// 어두운 화면에서는 PencilKit이 잉크의 밝기를 뒤집어 보여 준다(검정 → 흰색). 저장되는 필기와 노트북으로 보내는 그림은 그대로다.
+    private func applyTheme() {
+        let style = Theme.style
+        view.window?.overrideUserInterfaceStyle = style
+        toolPicker.overrideUserInterfaceStyle = style
+        toolPicker.colorUserInterfaceStyle = style
+        paper.dark = Theme.isDark
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        themeButton.setImage(UIImage(systemName: Theme.isDark ? "moon.fill" : "moon", withConfiguration: config), for: .normal)
+        themeButton.accessibilityLabel = Theme.isDark ? "밝은 화면으로" : "어두운 화면으로"
+    }
+
+    @objc private func themeTapped() {
+        Theme.isDark.toggle()
+        applyTheme()
     }
 
     // MARK: 버튼

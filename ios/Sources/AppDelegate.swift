@@ -19,8 +19,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        // 어두운 화면 모드에서는 PencilKit이 잉크 색을 뒤집어 보여 주므로 항상 밝은 화면으로 고정한다.
-        window.overrideUserInterfaceStyle = .light
+        // 기기 설정과 상관없이 앱 안의 버튼(달 모양)으로 고른 화면을 쓴다.
+        window.overrideUserInterfaceStyle = Theme.style
         window.rootViewController = NoteViewController()
         window.makeKeyAndVisible()
         self.window = window

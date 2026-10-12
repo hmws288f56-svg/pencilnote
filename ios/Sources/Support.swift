@@ -11,6 +11,28 @@ enum Page {
     static let thumbScale: CGFloat = 0.25
 }
 
+/// 밝은 화면 / 어두운 화면. 어두운 화면의 색은 노트북 화면(pc/public/style.css의 dark 테마)과 맞춘다.
+enum Theme {
+    private static let key = "darkMode"
+
+    static var isDark: Bool {
+        get { UserDefaults.standard.bool(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+
+    static var style: UIUserInterfaceStyle { isDark ? .dark : .light }
+
+    private static func pick(_ light: UIColor, _ dark: UIColor) -> UIColor {
+        UIColor { $0.userInterfaceStyle == .dark ? dark : light }
+    }
+
+    static let bar = pick(UIColor(white: 0.985, alpha: 1), UIColor(red: 0.102, green: 0.102, blue: 0.114, alpha: 1))
+    static let stage = pick(UIColor(red: 0.85, green: 0.84, blue: 0.81, alpha: 1), UIColor(red: 0.059, green: 0.059, blue: 0.067, alpha: 1))
+    static let line = pick(UIColor(white: 0, alpha: 0.12), UIColor(white: 1, alpha: 0.12))
+    static let title = pick(UIColor(white: 0.15, alpha: 1), UIColor(red: 0.89, green: 0.89, blue: 0.90, alpha: 1))
+    static let dim = pick(UIColor(white: 0.35, alpha: 1), UIColor(red: 0.60, green: 0.60, blue: 0.63, alpha: 1))
+}
+
 /// 노트북이 정해 주는 페이지. gen은 노트북에서 "비우기"를 할 때마다 올라간다.
 struct PageRef: Equatable {
     let note: String

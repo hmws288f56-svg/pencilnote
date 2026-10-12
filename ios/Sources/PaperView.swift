@@ -9,6 +9,13 @@ final class PaperView: UIView {
         }
     }
 
+    /// 어두운 종이. 필기 색은 PencilKit이 어두운 화면에 맞게 알아서 바꿔 보여 준다.
+    var dark = false {
+        didSet {
+            if dark != oldValue { setNeedsDisplay() }
+        }
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
@@ -26,12 +33,16 @@ final class PaperView: UIView {
 
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
-        ctx.setFillColor(UIColor.white.cgColor)
+        let paperColor = dark ? UIColor(red: 0.125, green: 0.125, blue: 0.141, alpha: 1) : UIColor.white
+        ctx.setFillColor(paperColor.cgColor)
         ctx.fill(bounds)
+        let ruled = dark ? UIColor(white: 1, alpha: 0.10) : UIColor(red: 70 / 255, green: 110 / 255, blue: 170 / 255, alpha: 0.30)
+        let grid = dark ? UIColor(white: 1, alpha: 0.07) : UIColor(red: 70 / 255, green: 110 / 255, blue: 170 / 255, alpha: 0.22)
+        let dot = dark ? UIColor(white: 1, alpha: 0.22) : UIColor(red: 60 / 255, green: 80 / 255, blue: 110 / 255, alpha: 0.40)
 
         switch kind {
         case "ruled":
-            ctx.setStrokeColor(UIColor(red: 70 / 255, green: 110 / 255, blue: 170 / 255, alpha: 0.30).cgColor)
+            ctx.setStrokeColor(ruled.cgColor)
             ctx.setLineWidth(1)
             var y: CGFloat = 132
             while y <= Page.height - 44 {
@@ -42,7 +53,7 @@ final class PaperView: UIView {
             ctx.strokePath()
 
         case "grid":
-            ctx.setStrokeColor(UIColor(red: 70 / 255, green: 110 / 255, blue: 170 / 255, alpha: 0.22).cgColor)
+            ctx.setStrokeColor(grid.cgColor)
             ctx.setLineWidth(1)
             var y: CGFloat = 32
             while y < Page.height {
@@ -59,7 +70,7 @@ final class PaperView: UIView {
             ctx.strokePath()
 
         case "dot":
-            ctx.setFillColor(UIColor(red: 60 / 255, green: 80 / 255, blue: 110 / 255, alpha: 0.40).cgColor)
+            ctx.setFillColor(dot.cgColor)
             var y: CGFloat = 32
             while y < Page.height {
                 var x: CGFloat = 32
