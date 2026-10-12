@@ -22,6 +22,7 @@ const ICONS = {
   menu: 'M4 6h16M4 12h16M4 18h16',
   pages: 'M8 3h11v14H8zM5 7v14h11',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  moon: 'M20 14.5A8 8 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z',
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -78,6 +79,8 @@ let padView = null; // 아이패드가 보고 있는 영역
 let liveStroke = null; // 쓰는 중인 획
 let liveFrame = 0;
 let viewMode = localStorage.getItem('pencilnote.view') === 'page' ? 'page' : 'follow';
+// 어두운 화면: 종이는 어둡게 그리고, 필기는 CSS에서 밝기를 뒤집어 보여 준다. (저장·내보내기는 항상 밝은 종이)
+let dark = document.documentElement.dataset.theme === 'dark';
 
 // ---------- 서버와 통신 ----------
 
@@ -161,7 +164,7 @@ function onState(s) {
   }
   if (shownPaper !== page.paper) {
     shownPaper = page.paper;
-    drawPaper(paperCtx, page.paper, S);
+    drawPaper(paperCtx, page.paper, S, dark);
   }
   layout(false);
 }
@@ -328,13 +331,13 @@ function drawLive() {
 }
 
 // 종이 무늬. 아이패드 앱의 PaperView 와 같은 위치에 같은 선을 그린다.
-function drawPaper(ctx, kind, scale) {
+function drawPaper(ctx, kind, scale, night) {
   ctx.save();
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = night ? '#202024' : '#ffffff';
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
   if (kind === 'ruled') {
-    ctx.strokeStyle = 'rgba(70, 110, 170, 0.30)';
+    ctx.strokeStyle = night ? 'rgba(255, 255, 255, 0.10)' : 'rgba(70, 110, 170, 0.30)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let y = 132; y <= PAGE_H - 44; y += 44) {
@@ -343,7 +346,7 @@ function drawPaper(ctx, kind, scale) {
     }
     ctx.stroke();
   } else if (kind === 'grid') {
-    ctx.strokeStyle = 'rgba(70, 110, 170, 0.22)';
+    ctx.strokeStyle = night ? 'rgba(255, 255, 255, 0.07)' : 'rgba(70, 110, 170, 0.22)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let y = 32; y < PAGE_H; y += 32) {
@@ -356,7 +359,7 @@ function drawPaper(ctx, kind, scale) {
     }
     ctx.stroke();
   } else if (kind === 'dot') {
-    ctx.fillStyle = 'rgba(60, 80, 110, 0.40)';
+    ctx.fillStyle = night ? 'rgba(255, 255, 255, 0.22)' : 'rgba(60, 80, 110, 0.40)';
     for (let y = 32; y < PAGE_H; y += 32) {
       for (let x = 32; x < PAGE_W; x += 32) {
         ctx.beginPath();
@@ -553,7 +556,7 @@ function savePng() {
   c.width = PAGE_W * S;
   c.height = PAGE_H * S;
   const ctx = c.getContext('2d');
-  ctx.drawImage(canvases.paper, 0, 0);
+  drawPaper(ctx, shownPaper, S, false);
   ctx.drawImage(canvases.ink, 0, 0);
   c.toBlob((blob) => {
     const a = el('a', { href: URL.createObjectURL(blob), download: `${safeName(note.title)}-${curIndex() + 1}.png` });
@@ -574,7 +577,7 @@ async function savePdf() {
       const bg = document.createElement('canvas');
       bg.width = PAGE_W * S;
       bg.height = PAGE_H * S;
-      drawPaper(bg.getContext('2d'), p.paper, S);
+      drawPaper(bg.getContext('2d'), p.paper, S, false);
       const paper = new Image();
       paper.src = bg.toDataURL('image/png');
       const ink = new Image();
@@ -659,6 +662,12 @@ $('#unpair').addEventListener('click', () => {
 
 $('#savePng').addEventListener('click', savePng);
 $('#savePdf').addEventListener('click', () => run(savePdf()));
+$('#themeBtn').addEventListener('click', () => {
+  dark = !dark;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  localStorage.setItem('pencilnote.theme', dark ? 'dark' : 'light');
+  if (shownPaper) drawPaper(paperCtx, shownPaper, S, dark);
+});
 $('#focusBtn').addEventListener('click', () => setFocus(true));
 $('#exitFocus').addEventListener('click', () => setFocus(false));
 

@@ -6,6 +6,13 @@
 <title>펜슬노트</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css">
+<script>
+// 화면이 그려지기 전에 테마를 정해 깜빡임을 없앤다. 주소의 ?theme=dark|light 가 저장된 설정보다 먼저다.
+(function () {
+  var t = new URLSearchParams(location.search).get('theme') || localStorage.getItem('pencilnote.theme');
+  document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light';
+})();
+</script>
 </head>
 <body>
 <div id="app">
@@ -72,6 +79,7 @@
         <button id="clearPage" class="btn" type="button" title="이 페이지의 필기를 모두 지웁니다"><span data-icon="eraser"></span>비우기</button>
         <button id="savePng" class="btn" type="button" title="이 페이지를 그림 파일로 저장"><span data-icon="download"></span>PNG</button>
         <button id="savePdf" class="btn" type="button" title="노트 전체를 PDF로 저장 (인쇄 창에서 'PDF로 저장' 선택)"><span data-icon="print"></span>PDF</button>
+        <button id="themeBtn" class="btn icon" type="button" title="어두운 화면 / 밝은 화면"><span data-icon="moon"></span></button>
         <button id="focusBtn" class="btn icon" type="button" title="필기만 크게 보기 (F)"><span data-icon="expand"></span></button>
       </div>
     </header>
