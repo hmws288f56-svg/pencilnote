@@ -322,6 +322,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .compact-only { display: none; }
 #menuBtn { position: relative; }
 #menuBtn .dot { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; box-shadow: 0 0 0 2px #fff; }
+/* 연결되어 있을 때는 표시하지 않는다. 끊겼을 때만 주황 점이 보인다. */
+#menuBtn .dot.on { display: none; }
 
 @media (max-width: 900px) {
   #app { grid-template-columns: minmax(0, 1fr); }
