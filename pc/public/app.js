@@ -6,6 +6,7 @@ const PAGE_W = 1024;
 const PAGE_H = 1448;
 const S = 2; // 캔버스 해상도 배율
 const MARGIN = 28;
+const LIVE_PEN_SCALE = 0.5; // 쓰는 중인 선 굵기 ÷ 도구에 설정된 굵기
 
 const ICONS = {
   plus: 'M12 5v14M5 12h14',
@@ -284,7 +285,9 @@ function drawLive() {
   if (pts.length < 2) return;
 
   const pointer = s.tool === 'eraser' || s.tool === 'lasso';
-  const width = pointer ? 2 : Math.max(1, s.width);
+  // 임시 선의 굵기. 펜은 필압 때문에 실제 획이 설정 굵기의 절반쯤으로 나오므로 그만큼 가늘게 그린다.
+  // (형광펜은 필압과 상관없이 설정 굵기 그대로 나온다)
+  const width = pointer ? 2 : s.tool === 'marker' ? Math.max(1, s.width) : Math.max(0.75, s.width * LIVE_PEN_SCALE);
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
