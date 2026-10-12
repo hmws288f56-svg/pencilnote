@@ -106,6 +106,15 @@ final class PadLink: NSObject, URLSessionWebSocketDelegate {
         return (host, defaultPort)
     }
 
+    /// 등록된 노트북의 주소만 바꾼다. (네트워크가 바뀌어 주소가 달라졌을 때)
+    /// 연결 코드는 필요 없다. 새 주소의 기기가 진짜 내 노트북인지는 연결할 때 인증서 지문으로 확인한다.
+    func changeHost(_ rawHost: String) {
+        let newHost = Self.cleanHost(rawHost)
+        guard !newHost.isEmpty, newHost != host else { return }
+        host = newHost
+        certProblem = false
+    }
+
     // MARK: 등록
 
     /// 연결 코드로 노트북에 등록한다. 성공하면 nil, 실패하면 이유(bad / none / locked / unreachable)를 돌려준다.

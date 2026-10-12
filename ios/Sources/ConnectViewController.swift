@@ -173,8 +173,10 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
         }
         view.endEditing(true)
 
-        // 이미 등록된 노트북이고 코드를 비워 뒀으면 다시 붙기만 한다.
-        if code.isEmpty && link.isPaired && host == link.host {
+        // 이미 등록되어 있고 코드를 비워 뒀으면 주소만 바꿔서 다시 붙는다.
+        // (다른 Wi-Fi로 옮겨 주소가 달라져도 코드를 다시 넣을 필요가 없다. 진짜 내 노트북인지는 인증서로 확인한다)
+        if code.isEmpty && link.isPaired {
+            link.changeHost(host)
             waitForConnection()
             return
         }
@@ -233,11 +235,13 @@ final class ConnectViewController: UIViewController, UITextFieldDelegate {
             }
             self.hostField.text = first.host
             if found.count == 1 {
-                self.show("찾았어요: \(first.name). 연결 코드를 입력하고 ‘연결’을 누르세요.", isError: false)
+                self.show(self.link.isPaired
+                    ? "찾았어요: \(first.name). ‘연결’을 누르세요. (이미 등록된 노트북이면 코드는 비워 두면 돼요)"
+                    : "찾았어요: \(first.name). 연결 코드를 입력하고 ‘연결’을 누르세요.", isError: false)
             } else {
                 self.show("노트북이 \(found.count)대 보여요. \(first.name)의 주소를 넣었어요.", isError: false)
             }
-            if (self.codeField.text ?? "").isEmpty { self.codeField.becomeFirstResponder() }
+            if !self.link.isPaired && (self.codeField.text ?? "").isEmpty { self.codeField.becomeFirstResponder() }
         }
     }
 }
